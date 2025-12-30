@@ -1,8 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include "frontend/Tokens.hpp"
-
-using namespace Tokenization;
+#include "frontend/Parser.hpp"
 
 int main(int argc, char** argv) {
     if(argc != 2) {
@@ -18,9 +17,14 @@ int main(int argc, char** argv) {
     std::string buffer(size, '\0');
     source.read(buffer.data(), size);
 
-    auto tokens = tokenize(buffer);
-    for(const auto& token : tokens) {
-        std::cout << token << "\n";
-    }
+    auto tokens = Tokenization::tokenize(buffer);
+    std::vector<Token>::const_iterator it = tokens.begin();
+    auto result = Parser::parseExpression(tokens, it);
+    auto resultValue = result->getValue();
+    if(!resultValue.has_value()) 
+        std::cout << "Expression has no clear value" << std::endl;
+    else
+        std::cout << "Expression value: " << resultValue.value() << std::endl;
+    
     return 0;
 }

@@ -2,6 +2,9 @@
 #include <stdexcept>
 #include <charconv>
 
+AST::Statement::~Statement() = default;
+AST::Expression::~Expression() = default;
+
 AST::VariableDeclaration::VariableDeclaration(std::string_view identificator, std::unique_ptr<Expression> value)
     : identificator(identificator), value(std::move(value)) 
 {
