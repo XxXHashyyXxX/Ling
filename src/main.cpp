@@ -18,13 +18,33 @@ int main(int argc, char** argv) {
     source.read(buffer.data(), size);
 
     auto tokens = Tokenization::tokenize(buffer);
-    std::vector<Token>::const_iterator it = tokens.begin();
-    auto result = Parser::parseExpression(tokens, it);
-    auto resultValue = result->getValue();
-    if(!resultValue.has_value()) 
-        std::cout << "Expression has no clear value" << std::endl;
-    else
-        std::cout << "Expression value: " << resultValue.value() << std::endl;
+    auto result = Parser::parseTokens(tokens);
+
+    for(const auto& statement : result)
+    {
+        if(auto* ptr = dynamic_cast<VariableDeclaration*>(statement.get())) {
+            std::cout   <<  "Variable declaration:\n"
+                            "\tVariable name: " << ptr->identificator << "\n"
+                        <<  "\tVariable value: " << ptr->value->getValue().value() << std::endl;
+        }
+        else if(auto* ptr = dynamic_cast<VariableAssignment*>(statement.get())) {
+            std::cout   <<  "Variable assignment:\n"
+                            "\tVariable name: " << ptr->identificator << "\n"
+                        <<  "\tVariable value: " << ptr->value->getValue().value() << std::endl;
+        }
+        else if(auto* ptr = dynamic_cast<IfStatement*>(statement.get())) {
+            std::cout   <<  "If statement:\n"
+                            "\tCondition: " << ptr->condition->getValue().value() << std::endl;
+        }
+        else if(auto* ptr = dynamic_cast<WhileStatement*>(statement.get())) {
+            std::cout   <<  "While statement:\n"
+                            "\tCondition: " << ptr->condition->getValue().value() << std::endl;
+        }
+        else if(auto* ptr = dynamic_cast<DisplayStatement*>(statement.get())) {
+            std::cout   <<  "Display statement:\n"
+                            "\tVariable name: " << ptr->identificator << std::endl;
+        }
+    }
     
     return 0;
 }

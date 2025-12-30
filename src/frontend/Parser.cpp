@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <utility>
 #include <iostream>
+#include <initializer_list>
 
 /**
  *  Possible statements:
@@ -25,9 +26,71 @@
  *      display [identificator];    
  */
 
+inline static void checkNextToken(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& it, Token::Type expectedToken)
+{
+    auto end = tokens.end();
+    if(it + 1 == end) throw std::runtime_error("Structure not met (end of tokens where token was expected)");
+    ++it;
+    if(it->type != expectedToken) throw std::runtime_error("Structure not met (token doesn\'t match the expected token)");
+}
+
+std::unique_ptr<Statement> parseStatement(const std::vector<Token> &tokens, std::vector<Token>::const_iterator &it)
+{
+    auto checkNext = [tokens, &it](Token::Type expectedType)
+    { checkNextToken(tokens, it, expectedType); };
+
+    switch (it->type)
+    {
+        case Token::Type::KeywordLet: {
+            checkNext(Token::Type::Identificator);
+            std::string_view identificator = it->value;
+            checkNext(Token::Type::OperatorAssign);
+            ++it;
+            auto value = Parser::parseExpression(tokens, it, Token::Type::EndOfLine);
+            return std::make_unique<VariableDeclaration>(identificator, std::move(value));
+        } break;
+        case Token::Type::Identificator: {
+            std::string_view identificator = it->value;
+            checkNext(Token::Type::OperatorAssign);
+            ++it;
+            auto value = Parser::parseExpression(tokens, it, Token::Type::EndOfLine);
+            return std::make_unique<VariableAssignment>(identificator, std::move(value));
+        } break;
+        case Token::Type::KeywordIf: {
+            std::advance(it, 2);
+            auto condition = Parser::parseExpression(tokens, it);
+            ++it;
+            auto body = parseStatement(tokens, it);
+            return std::make_unique<IfStatement>(std::move(condition), std::move(body));
+        } break;
+        case Token::Type::KeywordWhile: {
+            std::advance(it, 2);
+            auto condition = Parser::parseExpression(tokens, it);
+            ++it;
+            auto body = parseStatement(tokens, it);
+            return std::make_unique<WhileStatement>(std::move(condition), std::move(body));
+        } break;
+        case Token::Type::KeywordDisplay: {
+            checkNext(Token::Type::Identificator);
+            std::string_view identificator = it->value;
+            checkNext(Token::Type::EndOfLine);
+            return std::make_unique<DisplayStatement>(identificator);
+        } break;
+        default:
+            throw std::runtime_error("Invalid statement");
+    }
+}
+
 std::vector<std::unique_ptr<Statement>> Parser::parseTokens(const std::vector<Token> &tokens)
 {
-    return std::vector<std::unique_ptr<Statement>>();
+    std::vector<std::unique_ptr<Statement>> out;
+
+    for(auto it = tokens.begin(); it < tokens.end(); ++it)
+    {
+        out.push_back(std::move(parseStatement(tokens, it)));
+    }
+
+    return out;
 }
 
 inline static const std::unordered_map<Token::Type, unsigned> binaryOperatorsPrecedence = {{
@@ -156,12 +219,6 @@ std::unique_ptr<Expression> Parser::parseExpression(const std::vector<Token> &to
     std::stack<std::unique_ptr<Expression>> values;
 
     auto onpDeque = convertToOnp(tokens, it, terminationToken);
-
-    std::cout << "[Log] Tokens in ONP" << std::endl;
-    for(const auto& pair : onpDeque)
-    {
-        std::cout << "[Log] Token " << *(pair.first) << std::endl;
-    }
 
     for(auto pair : onpDeque)
     {
