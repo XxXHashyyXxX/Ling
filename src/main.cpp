@@ -2,6 +2,8 @@
 #include <fstream>
 #include "frontend/Tokens.hpp"
 #include "frontend/Parser.hpp"
+#include "backend/SymbolTable.hpp"
+
 
 int main(int argc, char** argv) {
     if(argc != 2) {
@@ -44,6 +46,12 @@ int main(int argc, char** argv) {
             std::cout   <<  "Display statement:\n"
                             "\tVariable name: " << ptr->identificator << std::endl;
         }
+    }
+
+    SymbolTable table(result);
+    for(auto symbol : table)
+    {
+        std::cout << "[Symbol table] Declared symbol: " << symbol << "\n";
     }
     
     return 0;
