@@ -105,16 +105,19 @@ std::vector<std::unique_ptr<Statement>> Parser::parseTokens(const std::vector<To
 }
 
 inline static const std::unordered_map<Token::Type, unsigned> binaryOperatorsPrecedence = {{
-    {Token::Type::OperatorPlus, 0},
-    {Token::Type::OperatorMinus, 0},
-    {Token::Type::OperatorSlash, 1},
-    {Token::Type::OperatorStar, 1},
-    {Token::Type::OperatorPercent, 1}
+    {Token::Type::OperatorPlus, 3},
+    {Token::Type::OperatorMinus, 3},
+    {Token::Type::OperatorSlash, 4},
+    {Token::Type::OperatorStar, 4},
+    {Token::Type::OperatorPercent, 4},
+    {Token::Type::OperatorAND, 2},
+    {Token::Type::OperatorOR, 1}
 }};
 
 inline static const std::unordered_map<Token::Type, unsigned> unaryOperatorsPrecedence = {{
-    {Token::Type::OperatorPlus, 2},
-    {Token::Type::OperatorMinus, 2}
+    {Token::Type::OperatorPlus, 4},
+    {Token::Type::OperatorMinus, 4},
+    {Token::Type::OperatorNOT, 4}
 }};
 
 static unsigned getPrecedence(Token::Type type, Parser::OperatorArity arity)
@@ -156,7 +159,10 @@ static std::deque<std::pair<std::vector<Token>::const_iterator, std::optional<Pa
             case Token::Type::OperatorPlus:
             case Token::Type::OperatorSlash:
             case Token::Type::OperatorStar:
-            case Token::Type::OperatorPercent: {
+            case Token::Type::OperatorPercent:
+            case Token::Type::OperatorAND:
+            case Token::Type::OperatorOR:
+            case Token::Type::OperatorNOT: {
                 auto arity = Parser::getOperatorArity(it, start);
                 auto canPlaceOperator = [&operatorsStack, &it, &arity]() -> bool {
                     if(operatorsStack.empty()) return true;
@@ -220,12 +226,15 @@ inline static const std::unordered_map<Token::Type, BinaryOperation::OperationTy
     {Token::Type::OperatorMinus, BinaryOperation::OperationType::Subtraction},
     {Token::Type::OperatorStar, BinaryOperation::OperationType::Multiplication},
     {Token::Type::OperatorSlash, BinaryOperation::OperationType::Division},
-    {Token::Type::OperatorPercent, BinaryOperation::OperationType::Modulo}
+    {Token::Type::OperatorPercent, BinaryOperation::OperationType::Modulo},
+    {Token::Type::OperatorAND, BinaryOperation::OperationType::And},
+    {Token::Type::OperatorOR, BinaryOperation::OperationType::Or}
 }};
 
 inline static const std::unordered_map<Token::Type, UnaryOperation::OperationType> unaryOperationTypes = {{
     {Token::Type::OperatorPlus, UnaryOperation::OperationType::Identity},
-    {Token::Type::OperatorMinus, UnaryOperation::OperationType::Negation}
+    {Token::Type::OperatorMinus, UnaryOperation::OperationType::Negation},
+    {Token::Type::OperatorNOT, UnaryOperation::OperationType::Not}
 }};
 
 std::unique_ptr<Expression> Parser::parseExpression(const std::vector<Token> &tokens, std::vector<Token>::const_iterator& it, Token::Type terminationToken)
@@ -283,7 +292,10 @@ inline static const std::unordered_set<Token::Type> operators = {{
     Token::Type::OperatorPlus,
     Token::Type::OperatorSlash,
     Token::Type::OperatorStar,
-    Token::Type::OperatorPercent
+    Token::Type::OperatorPercent,
+    Token::Type::OperatorAND,
+    Token::Type::OperatorOR,
+    Token::Type::OperatorNOT
 }};
 
 Parser::OperatorArity Parser::getOperatorArity(std::vector<Token>::const_iterator &it, const std::vector<Token>::const_iterator &start)

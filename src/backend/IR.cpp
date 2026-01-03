@@ -22,7 +22,14 @@ inline static std::unordered_map<AST::BinaryOperation::OperationType, BuilderIR:
     {AST::BinaryOperation::OperationType::Subtraction, BuilderIR::InstructionBinaryOperation::Operation::Subtraction},
     {AST::BinaryOperation::OperationType::Multiplication, BuilderIR::InstructionBinaryOperation::Operation::Multiplication},
     {AST::BinaryOperation::OperationType::Division, BuilderIR::InstructionBinaryOperation::Operation::Division},
-    {AST::BinaryOperation::OperationType::Modulo, BuilderIR::InstructionBinaryOperation::Operation::Modulo}
+    {AST::BinaryOperation::OperationType::Modulo, BuilderIR::InstructionBinaryOperation::Operation::Modulo},
+    {AST::BinaryOperation::OperationType::And, BuilderIR::InstructionBinaryOperation::Operation::And},
+    {AST::BinaryOperation::OperationType::Or, BuilderIR::InstructionBinaryOperation::Operation::Or}
+}};
+
+inline static std::unordered_map<AST::UnaryOperation::OperationType, BuilderIR::InstructionUnaryOperator::Operation> astUnopToIrUnop = {{
+    {AST::UnaryOperation::OperationType::Negation, BuilderIR::InstructionUnaryOperator::Operation::Negation},
+    {AST::UnaryOperation::OperationType::Not, BuilderIR::InstructionUnaryOperator::Operation::Not}
 }};
 
 BuilderIR::Operand BuilderIR::lowerExpression(const std::unique_ptr<AST::Expression>& expression)
@@ -42,13 +49,33 @@ BuilderIR::Operand BuilderIR::lowerExpression(const std::unique_ptr<AST::Express
     if(auto* unary = dynamic_cast<AST::UnaryOperation*>(expression.get()))
     {
         auto operation = unary->operation;
-        Operand a = lowerExpression(unary->operand);
+        Operand operand = lowerExpression(unary->operand);
 
-        if(operation == AST::UnaryOperation::OperationType::Identity) return a;
+        if(operation == AST::UnaryOperation::OperationType::Identity) return operand;
+        auto operationIR = astUnopToIrUnop.at(operation);
 
-        TempVarID temp = allocateTempVar();
-        emit(InstructionNegation(temp, a));
-        return Operand::TempVar(temp);
+        switch(operationIR)
+        {
+            case BuilderIR::InstructionUnaryOperator::Operation::Negation: {
+                TempVarID temp = allocateTempVar();
+                emit(InstructionUnaryOperator(temp, operand));
+                return Operand::TempVar(temp);
+            }
+            case BuilderIR::InstructionUnaryOperator::Operation::Not: {
+                TempVarID temp = allocateTempVar();
+                LabelID valueTrue = allocateLabel();
+                LabelID valueFalse = allocateLabel();
+                LabelID done = allocateLabel();
+                emit(InstructionBranch(operand, valueFalse, valueTrue));
+                emit(InstructionLabel(valueFalse));
+                emit(InstructionSet(temp, 0));
+                emit(InstructionJump(done));
+                emit(InstructionLabel(valueTrue));
+                emit(InstructionSet(temp, 1));
+                emit(InstructionLabel(done));
+                return Operand::TempVar(temp);
+            }
+        }
     }
 
     if(auto* binary = dynamic_cast<AST::BinaryOperation*>(expression.get()))
@@ -56,9 +83,49 @@ BuilderIR::Operand BuilderIR::lowerExpression(const std::unique_ptr<AST::Express
         Operand leftOperand = lowerExpression(binary->leftOperand);
         Operand rightOperand = lowerExpression(binary->rightOperand);
 
-        TempVarID temp = allocateTempVar();
-        emit(InstructionBinaryOperation(temp, astBinopToIrBinop.at(binary->operation), leftOperand, rightOperand));
-        return Operand::TempVar(temp);
+        auto operation = astBinopToIrBinop.at(binary->operation);
+        switch(operation)
+        {
+            case BuilderIR::InstructionBinaryOperation::Operation::And: {
+                TempVarID temp = allocateTempVar();
+                LabelID keepChecking = allocateLabel();
+                LabelID valueTrue = allocateLabel();
+                LabelID valueFalse = allocateLabel();
+                LabelID done = allocateLabel();
+                emit(InstructionBranch(leftOperand, keepChecking, valueFalse));
+                emit(InstructionLabel(keepChecking));
+                emit(InstructionBranch(rightOperand, valueTrue, valueFalse));
+                emit(InstructionLabel(valueTrue));
+                emit(InstructionSet(temp, 1));
+                emit(InstructionJump(done));
+                emit(InstructionLabel(valueFalse));
+                emit(InstructionSet(temp, 0));
+                emit(InstructionLabel(done));
+                return Operand::TempVar(temp);
+            }
+            case BuilderIR::InstructionBinaryOperation::Operation::Or: {
+                TempVarID temp = allocateTempVar();
+                LabelID keepChecking = allocateLabel();
+                LabelID valueFalse = allocateLabel();
+                LabelID valueTrue = allocateLabel();
+                LabelID done = allocateLabel();
+                emit(InstructionBranch(leftOperand, valueTrue, keepChecking));
+                emit(InstructionLabel(keepChecking));
+                emit(InstructionBranch(rightOperand, valueTrue, valueFalse));
+                emit(InstructionLabel(valueFalse));
+                emit(InstructionSet(temp, 0));
+                emit(InstructionJump(done));
+                emit(InstructionLabel(valueTrue));
+                emit(InstructionSet(temp, 1));
+                emit(InstructionLabel(done));
+                return Operand::TempVar(temp);
+            }
+            default: {
+                TempVarID temp = allocateTempVar();
+                emit(InstructionBinaryOperation(temp, astBinopToIrBinop.at(binary->operation), leftOperand, rightOperand));
+                return Operand::TempVar(temp);
+            }
+        }
     }
 
     throw std::runtime_error("Unrecognized expression, unable to lower");
@@ -171,8 +238,8 @@ BuilderIR::InstructionStore::InstructionStore(std::string_view destinationSymbol
 BuilderIR::InstructionBinaryOperation::InstructionBinaryOperation(TempVarID destination, const Operation &operation, const Operand &leftOperand, const Operand &rightOperand)
     : destination(destination), operation(operation), leftOperand(leftOperand), rightOperand(rightOperand) {}
 
-BuilderIR::InstructionNegation::InstructionNegation(TempVarID destination, const Operand &operand)
-    : destination(destination), operand(operand) {}
+BuilderIR::InstructionUnaryOperator::InstructionUnaryOperator(TempVarID destination, const Operand &operand, Operation operation)
+    : destination(destination), operand(operand), operation(operation) {}
 
 BuilderIR::InstructionLabel::InstructionLabel(LabelID label)
     : label(label) {}
@@ -209,6 +276,11 @@ std::ostream &operator<<(std::ostream &os, const BuilderIR::InstructionStore &i)
     return os << "\tSTORE [" << i.destinationSymbol << "], " << i.value;
 }
 
+std::ostream &operator<<(std::ostream &os, const BuilderIR::InstructionSet &i)
+{
+    return os << "\tSET t" << i.destination << ", " << i.value;
+}
+
 std::ostream &operator<<(std::ostream &os, const BuilderIR::InstructionBinaryOperation &i)
 {
     switch(i.operation)
@@ -230,7 +302,7 @@ std::ostream &operator<<(std::ostream &os, const BuilderIR::InstructionBinaryOpe
     return os << i.destination << ", " << i.leftOperand << ", " << i.rightOperand;
 }
 
-std::ostream &operator<<(std::ostream &os, const BuilderIR::InstructionNegation &i)
+std::ostream &operator<<(std::ostream &os, const BuilderIR::InstructionUnaryOperator &i)
 {
     return os << "\tNEG t" << i.destination << ", " << i.operand;
 }
@@ -254,3 +326,6 @@ std::ostream &operator<<(std::ostream &os, const BuilderIR::InstructionDisplay &
 {
     return os << "\tDISP " << i.symbol;
 }
+
+BuilderIR::InstructionSet::InstructionSet(TempVarID destination, int value)
+    : destination(destination), value(value) {}

@@ -79,7 +79,9 @@ namespace AST {
             Subtraction,
             Multiplication,
             Division,
-            Modulo
+            Modulo,
+            And,
+            Or
         };
 
         BinaryOperation(OperationType operation, std::unique_ptr<Expression> leftOperand, std::unique_ptr<Expression> rightOperand);
@@ -96,13 +98,16 @@ namespace AST {
             {OperationType::Division,       [](int a, int b) { return a / b; }},
             {OperationType::Multiplication, [](int a, int b) { return a * b; }},
             {OperationType::Subtraction,    [](int a, int b) { return a - b; }},
-            {OperationType::Modulo,         [](int a, int b) { return a % b; }}
+            {OperationType::Modulo,         [](int a, int b) { return a % b; }},
+            {OperationType::And,            [](int a, int b) { return a && b; }},
+            {OperationType::Or,             [](int a, int b) { return a || b; }}
         }};
     };
     struct UnaryOperation : public Expression {
         enum class OperationType {
             Identity,
-            Negation
+            Negation,
+            Not
         };
 
         UnaryOperation(OperationType operation, std::unique_ptr<Expression> operand);
@@ -114,8 +119,9 @@ namespace AST {
         std::unique_ptr<Expression> operand;
 
         inline static const std::unordered_map<OperationType, std::function<int(int)>> operations = {{
-            {OperationType::Identity, [](int a) { return a; }},
-            {OperationType::Negation, [](int a) { return -a; }}
+            {OperationType::Identity,   [](int a) { return a; }},
+            {OperationType::Negation,   [](int a) { return -a; }},
+            {OperationType::Not,        [](int a) { return !a; }}
         }};
     };
 };

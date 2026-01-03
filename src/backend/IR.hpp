@@ -49,13 +49,24 @@ public:
         friend std::ostream& operator<<(std::ostream& os, const InstructionStore& i);
     };
 
+    struct InstructionSet {
+        InstructionSet(TempVarID destination, int value);
+
+        TempVarID destination;
+        int value;
+
+        friend std::ostream& operator<<(std::ostream& os, const InstructionSet& i);
+    };
+
     struct InstructionBinaryOperation {
         enum class Operation {
             Addition,
             Subtraction,
             Multiplication,
             Division,
-            Modulo
+            Modulo,
+            And,
+            Or
         };
 
         InstructionBinaryOperation(TempVarID destination, const Operation& operation, const Operand& leftOperand, const Operand& rightOperand);
@@ -67,13 +78,19 @@ public:
         friend std::ostream& operator<<(std::ostream& os, const InstructionBinaryOperation& i);
     };
 
-    struct InstructionNegation {
-        InstructionNegation(TempVarID destination, const Operand& operand);
+    struct InstructionUnaryOperator {
+        enum class Operation {
+            Negation,
+            Not
+        };
+
+        InstructionUnaryOperator(TempVarID destination, const Operand& operand, Operation operation = Operation::Negation);
 
         TempVarID destination;
         Operand operand;
+        Operation operation;
 
-        friend std::ostream& operator<<(std::ostream& os, const InstructionNegation& i);
+        friend std::ostream& operator<<(std::ostream& os, const InstructionUnaryOperator& i);
     };
 
     struct InstructionLabel {
@@ -114,11 +131,12 @@ public:
         InstructionLoad,
         InstructionStore,
         InstructionBinaryOperation,
-        InstructionNegation,
+        InstructionUnaryOperator,
         InstructionLabel,
         InstructionJump,
         InstructionBranch,
-        InstructionDisplay
+        InstructionDisplay,
+        InstructionSet
     >;
 
     Operand lowerExpression(const std::unique_ptr<AST::Expression>& expression);

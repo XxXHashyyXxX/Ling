@@ -68,11 +68,12 @@ struct InstructionGenerator {
     void operator()(BuilderIR::InstructionLoad load) const;
     void operator()(BuilderIR::InstructionStore store) const;
     void operator()(BuilderIR::InstructionBinaryOperation binaryOperation) const;
-    void operator()(BuilderIR::InstructionNegation negation) const;
+    void operator()(BuilderIR::InstructionUnaryOperator negation) const;
     void operator()(BuilderIR::InstructionLabel label) const;
     void operator()(BuilderIR::InstructionJump jump) const;
     void operator()(BuilderIR::InstructionBranch branch) const;
     void operator()(BuilderIR::InstructionDisplay display) const;
+    void operator()(BuilderIR::InstructionSet set) const;
 
     std::ostream& os;
 };
@@ -261,25 +262,37 @@ void InstructionGenerator::operator()(BuilderIR::InstructionBinaryOperation bina
             os << generateMovToTempVar(binaryOperation.destination, "rdx");
             return;
         } break;
+        default: {
+            return;
+        }
     }
 
     os << generateMovToTempVar(binaryOperation.destination, "rax");
 }
 
-void InstructionGenerator::operator()(BuilderIR::InstructionNegation negation) const
+void InstructionGenerator::operator()(BuilderIR::InstructionUnaryOperator unary) const
 {
-    switch(negation.operand.type)
+    switch(unary.operand.type)
     {
         case BuilderIR::Operand::Type::Immediate: {
-            os << generateMovImmediate("rax", negation.operand.immediate);
+            os << generateMovImmediate("rax", unary.operand.immediate);
         } break;
         case BuilderIR::Operand::Type::Temporary: {
-            os << generateMovFromTempVar("rax", negation.operand.tempVar);
+            os << generateMovFromTempVar("rax", unary.operand.tempVar);
         } break;
     }
 
-    os << "\tneg rax\n";
-    os << generateMovToTempVar(negation.destination, "rax");
+    switch(unary.operation)
+    {
+        case BuilderIR::InstructionUnaryOperator::Operation::Negation: {
+            os << "\tneg rax\n";
+        } break;
+        case BuilderIR::InstructionUnaryOperator::Operation::Not: {
+            os << "\tnot rax\n";
+        } break;
+    }
+
+    os << generateMovToTempVar(unary.destination, "rax");
 }
 
 void InstructionGenerator::operator()(BuilderIR::InstructionLabel label) const
@@ -313,4 +326,10 @@ void InstructionGenerator::operator()(BuilderIR::InstructionDisplay display) con
 {
     os << generateMovFromMemory("rdi", display.symbol);
     os << "\tcall __display__function__\n";
+}
+
+void InstructionGenerator::operator()(BuilderIR::InstructionSet set) const
+{
+    os << generateMovImmediate("rax", set.value);
+    os << generateMovToTempVar(set.destination, "rax");
 }
