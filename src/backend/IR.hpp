@@ -124,6 +124,8 @@ public:
     void lowerStatement(const std::unique_ptr<AST::Statement>& statement);
     void lowerProgram(const std::vector<std::unique_ptr<AST::Statement>>& statements);
 
+    TempVarID getTempVarsCount() const;
+
     BuilderIR(const std::vector<std::unique_ptr<AST::Statement>>& program);
     const std::vector<Instruction>& getCode() const;
 

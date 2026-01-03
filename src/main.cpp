@@ -4,6 +4,7 @@
 #include "frontend/Parser.hpp"
 #include "backend/SymbolTable.hpp"
 #include "backend/IR.hpp"
+#include "backend/CodeGen.hpp"
 
 int main(int argc, char** argv) {
     if(argc != 2) {
@@ -11,7 +12,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    std::ifstream source(argv[1], std::ios::binary);
+    std::string srcPath(argv[1]);
+    srcPath.append(".ling");
+    std::ifstream source(srcPath, std::ios::binary);
     source.seekg(0, std::ios::end);
     std::size_t size = source.tellg();
     source.seekg(0);
@@ -24,11 +27,7 @@ int main(int argc, char** argv) {
 
     SymbolTable table(result);
     BuilderIR ir(result);
-    std::cout << "_start:\n";
-    for(auto& instruction : ir.getCode())
-    {
-        std::cout << instruction << "\n";
-    }
+    CodeGen::generateCode(argv[1], ir, table);
     
     return 0;
 }

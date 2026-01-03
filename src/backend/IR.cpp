@@ -129,6 +129,11 @@ void BuilderIR::lowerProgram(const std::vector<std::unique_ptr<AST::Statement>> 
         lowerStatement(statement);
 }
 
+BuilderIR::TempVarID BuilderIR::getTempVarsCount() const
+{
+    return nextTemp;
+}
+
 BuilderIR::BuilderIR(const std::vector<std::unique_ptr<AST::Statement>> &program)
 {
     lowerProgram(program);
