@@ -1,0 +1,10 @@
+let input = 5;
+let result = 1;
+
+while(input)
+{
+    result = result * input;
+    input = input - 1;
+}
+
+display result;

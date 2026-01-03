@@ -56,6 +56,13 @@ bool SymbolTable::validateStatement(const std::unique_ptr<AST::Statement> &state
         auto symbol = ptr->identificator;
         return doesSymbolExist(symbol);
     }
+    if(auto* ptr = dynamic_cast<AST::CodeBlock*>(statement.get())) {
+        for(auto& innerStatement : ptr->block)
+        {
+            if(!validateStatement(innerStatement)) return false;
+        }
+        return true;
+    }
 
     throw std::invalid_argument("Unrecognized statement");
 }

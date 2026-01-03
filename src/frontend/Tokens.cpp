@@ -19,7 +19,9 @@ std::unordered_map<std::string, Token::Type> types = {{
     {"let", Token::Type::KeywordLet},
     {"while", Token::Type::KeywordWhile},
     {"display", Token::Type::KeywordDisplay},
-    {";", Token::Type::EndOfLine}
+    {";", Token::Type::EndOfLine},
+    {"{", Token::Type::BraceLeft},
+    {"}", Token::Type::BraceRight}
 }};
 
 static bool matchKeyword(const char* it, const char* end, const std::string& key) {
@@ -133,6 +135,10 @@ std::ostream &Tokenization::operator<<(std::ostream &os, const Token::Type &type
             return os << '(';
         case Token::Type::ParenthesisRight:
             return os << ')';
+        case Token::Type::BraceLeft:
+            return os << "{";
+        case Token::Type::BraceRight:
+            return os << "}";
         default:
             throw std::runtime_error("Invalid type");
     }

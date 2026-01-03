@@ -23,7 +23,11 @@
  *      while( [Expression] ) [Statement]
  * 
  *  - Display Statement:
- *      display [identificator];    
+ *      display [identificator];   
+ *  
+ *  - Code Block:
+ *      { [Statement]* }
+ *  
  */
 
 inline static void checkNextToken(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& it, Token::Type expectedToken)
@@ -76,18 +80,25 @@ std::unique_ptr<Statement> parseStatement(const std::vector<Token> &tokens, std:
             checkNext(Token::Type::EndOfLine);
             return std::make_unique<DisplayStatement>(identificator);
         } break;
+        case Token::Type::BraceLeft: {
+            ++it;
+            auto body = Parser::parseTokens(tokens, it);
+            return std::make_unique<CodeBlock>(std::move(body));
+        } break;
         default:
             throw std::runtime_error("Invalid statement");
     }
 }
 
-std::vector<std::unique_ptr<Statement>> Parser::parseTokens(const std::vector<Token> &tokens)
+std::vector<std::unique_ptr<Statement>> Parser::parseTokens(const std::vector<Token> &tokens, std::vector<Token>::const_iterator& it)
 {
     std::vector<std::unique_ptr<Statement>> out;
 
-    for(auto it = tokens.begin(); it < tokens.end(); ++it)
+    while(it != tokens.end())
     {
+        if(it->type == Token::Type::BraceRight) return out;
         out.push_back(std::move(parseStatement(tokens, it)));
+        ++it;
     }
 
     return out;

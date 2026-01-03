@@ -20,7 +20,9 @@ namespace Tokenization {
             KeywordIf,
             KeywordWhile,
             KeywordDisplay,
-            EndOfLine
+            EndOfLine,
+            BraceLeft,
+            BraceRight
         } type;
 
         std::string value;

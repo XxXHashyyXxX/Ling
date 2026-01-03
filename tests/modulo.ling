@@ -1,0 +1,20 @@
+let n = 123;
+let k = 10;
+
+let r = 0;
+let i = n;
+let f = 0;
+
+while(i)
+{
+    i = i - 1;
+    r = r + 1;
+
+    f = 1;
+    if(r - k)
+        f = 0;
+    if(f)
+        r = 0;
+}
+
+display r;

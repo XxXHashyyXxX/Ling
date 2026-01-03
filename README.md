@@ -8,7 +8,7 @@ Ling treats programs as an array of statements, meaning there is no `main` funct
 
 ### Statements
 
-Ling, in its current state, allows 5 distinct types of statements.
+Ling, in its current state, allows 6 distinct types of statements.
 
 -   Variable declaration - Declares a variable. As of now, the only available variables' types are integers.
     Example:
@@ -37,8 +37,13 @@ Ling, in its current state, allows 5 distinct types of statements.
     ```
     display x;
     ```
-
-Those are all the statements that the Ling compiler will recognize. Notice there is **no** code-block statement and thus the if and while statements are only able to perform a single statement as their bodies. This is a significant limitation of the language's simplicity but it will be reworked in the future versions.
+-   Code block - A list of statements that will be executed sequentially but are treated as a single statement. Important for `if` and `while` statements as they only accept single statement as their body.
+    Example:
+    ```
+    {
+        x = 21 + 37;
+    }
+    ```
 
 ### Expressions
 
@@ -56,3 +61,35 @@ The Ling language defines the following expressions.
     -   `+` - representing identity
     -   `-` - representing arithmetic negation
     Note that boolean operators, such as `!` are not implemented and neither are bitwise operators. Again, this will be reworked in a future version.
+
+## Usage
+
+In order to use the Ling compiler, it first has to be compiled itself. This can be achieved using the `cmake` system. The following terminal commands executed in the clone of this repository will compile the Ling compiler.
+```
+mkdir build
+cd build
+cmake ..
+make
+```
+
+### Compiling to executable
+
+In order to compile a Ling program, use the following terminal command
+```
+./ling [program]
+```
+Note that the program meant to be compiled is given without the `.ling` extension. For example, compilation of the `test.ling` program is done using
+```
+./ling test
+```
+
+### Compiling to assembly
+
+If, for any reason, it is prefered to compile to assembly instead of the ELF64 executable, the `-s` flag can be used. For instance, to compile `test.ling` into an assembly code, one can use
+```
+./ling test.ling -s
+```
+
+## Example programs
+
+Simple examples of the Ling programs are provided in the `tests` directory of this repository.
