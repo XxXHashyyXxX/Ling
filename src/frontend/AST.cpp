@@ -84,3 +84,6 @@ std::optional<int> AST::UnaryOperation::getValue() const
     auto operationLambda = operations.at(operation);
     return operationLambda(operandValue.value());
 }
+
+AST::CodeBlock::CodeBlock(std::vector<std::unique_ptr<Statement>> block)
+    : block(std::move(block)) {}

@@ -116,6 +116,13 @@ void BuilderIR::lowerStatement(const std::unique_ptr<AST::Statement> &statement)
         return;
     }
 
+    if(auto* codeBlock = dynamic_cast<AST::CodeBlock*>(statement.get()))
+    {
+        for(auto& innerStatement : codeBlock->block)
+            lowerStatement(innerStatement);
+        return;
+    }
+
     throw std::runtime_error("Unrecognized statement, cannot lower");
 }
 

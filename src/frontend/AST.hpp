@@ -49,6 +49,12 @@ namespace AST {
 
         std::string identificator;
     };
+    struct CodeBlock : public Statement {
+        CodeBlock(std::vector<std::unique_ptr<Statement>> block);
+        ~CodeBlock() = default;
+
+        std::vector<std::unique_ptr<Statement>> block;
+    };
 
     // ===== Expressions =====
     struct LiteralValue : public Expression {

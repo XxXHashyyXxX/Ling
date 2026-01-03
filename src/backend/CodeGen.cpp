@@ -131,6 +131,7 @@ std::string CodeGen::generateAssembly(std::string_view fileName, const BuilderIR
     displayFunctionAssemblyCode << displayFunctionAssembly;
     displayFunctionAssemblyCode.close();
 
+    std::system(("rm -f " + std::string(fileName) + ".asm " + std::string(fileName)).c_str());
     std::ofstream assemblyCode(std::string(fileName) + ".asm");
 
     // set relative mode
@@ -296,6 +297,7 @@ void InstructionGenerator::operator()(BuilderIR::InstructionBranch branch) const
         } break;
     }
 
+    os << "\ttest rax, rax\n";
     os << "\tjnz .L" << branch.ifTrue << "\n";
     os << "\tjmp .L" << branch.ifFalse << "\n";
 }

@@ -1,0 +1,12 @@
+let input = 10;
+
+let p = 0;
+let i = n;
+
+while(i)
+{
+    i = i - 1;
+    p = 1 - p;
+}
+
+display p;

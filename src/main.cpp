@@ -7,13 +7,27 @@
 #include "backend/CodeGen.hpp"
 
 int main(int argc, char** argv) {
-    if(argc != 2) {
+    if(argc < 2) {
         std::cout << "Usage: " << argv[0] << " [fileToCompile]\n";
         return 1;
     }
 
-    std::string srcPath(argv[1]);
-    srcPath.append(".ling");
+    std::string src;
+    bool fullCompile = true;
+
+    for(int i = 1; i < argc; ++i)
+    {
+        if(argv[i][0] != '-')
+        {
+            src = argv[i];
+            continue;
+        }
+
+        if(argv[i] == std::string("-s"))
+            fullCompile = false;
+    }
+
+    std::string srcPath = src + ".ling";
     std::ifstream source(srcPath, std::ios::binary);
     source.seekg(0, std::ios::end);
     std::size_t size = source.tellg();
@@ -23,11 +37,14 @@ int main(int argc, char** argv) {
     source.read(buffer.data(), size);
 
     auto tokens = Tokenization::tokenize(buffer);
-    auto result = Parser::parseTokens(tokens);
+    std::vector<Token>::const_iterator it = tokens.begin();
+    auto result = Parser::parseTokens(tokens, it);
 
     SymbolTable table(result);
     BuilderIR ir(result);
-    CodeGen::generateCode(argv[1], ir, table);
+
+    if(fullCompile) CodeGen::generateCode(src, ir, table);
+    else CodeGen::generateAssembly(src, ir, table);
     
     return 0;
 }
