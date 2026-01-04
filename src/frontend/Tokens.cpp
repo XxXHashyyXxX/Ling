@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <optional>
 #include <iostream>
+#include <sstream>
 
 using namespace Tokenization;
 
@@ -71,7 +72,42 @@ std::vector<Token> Tokenization::tokenize(std::string_view source)
     std::vector<Token> out;
     auto sourceEnd = source.end();
 
+    unsigned lineCount = 1;
+    unsigned charsCountAtLineStart = 0;
+
     for(auto it = source.begin(); it != sourceEnd; ++it) {
+        if(*it == '\n') {
+            lineCount++;
+            charsCountAtLineStart = (it - source.begin());
+            continue;
+        }
+
+        unsigned position = (it - source.begin() - charsCountAtLineStart);
+        std::ostringstream errorLineOss;
+
+        auto previousNewLine = it;
+        auto begin = source.begin();
+        while(previousNewLine != begin)
+        {
+            --previousNewLine;
+            if(*previousNewLine == '\n')
+                break;
+        }
+        auto lineBegin = *previousNewLine == '\n' ? previousNewLine+1 : previousNewLine;
+        auto lineEnd = it;
+        auto end = source.end();
+        while(lineEnd != end)
+        {
+            if(*lineEnd == '\n')
+                break;
+            ++lineEnd;
+        }
+        if(lineBegin < it) errorLineOss << std::string(lineBegin, it);
+        errorLineOss << "\033[31m" << *it << "\033[0m";
+        if(it + 1 < lineEnd) errorLineOss << std::string(it + 1, lineEnd);
+        errorLineOss << "\n";
+        errorLineOss << std::string(it - lineBegin, ' ') << "\033[31m~\033[0m";
+
         if(std::isspace(*it)) continue;
         if(*it == '\0') break;
 
@@ -80,14 +116,14 @@ std::vector<Token> Tokenization::tokenize(std::string_view source)
             while(it != sourceEnd && std::isdigit(*it)) ++it;
             auto end = it--;
 
-            out.emplace_back(Token::Type::Literal, std::string(start, end));
+            out.emplace_back(Token::Type::Literal, lineCount, position, errorLineOss.str(), std::string(start, end));
             continue;
         }
 
         auto tokenType = matchLongestTokenType(it, source.end());
         if(tokenType) {
             --it;
-            out.emplace_back(*tokenType, "");
+            out.emplace_back(*tokenType, lineCount, position, errorLineOss.str());
             continue;
         }
 
@@ -96,12 +132,14 @@ std::vector<Token> Tokenization::tokenize(std::string_view source)
             while(it != sourceEnd && (std::isalnum(*it) || *it == '_')) ++it;
             auto end = it--;
 
-            out.emplace_back(Token::Type::Identificator, std::string(start, end));
+            out.emplace_back(Token::Type::Identificator, lineCount, position, errorLineOss.str(), std::string(start, end));
             continue;
         }
 
-        std::cerr << "Troublesome character: " << static_cast<int>(*it) << "\nAt position " << (it - source.begin()) << "\n";
-        throw std::runtime_error("Token couldnt be matched");
+        std::ostringstream oss;
+        oss << "Could not tokenize character " << *it << " at line " << lineCount << ", position " << position << ":\n" << errorLineOss.str();
+
+        throw std::runtime_error(oss.str());
     }
     return out;
 }
@@ -109,72 +147,104 @@ std::vector<Token> Tokenization::tokenize(std::string_view source)
 std::ostream &Tokenization::operator<<(std::ostream &os, const Token &token)
 {
     os << token.type;
-    if(token.type == Token::Type::Identificator || token.type == Token::Type::Literal) os << token.value;
-    return os;
+    if(token.type == Token::Type::Identificator || token.type == Token::Type::Literal) os << token.value << '\'';
+    return os << " in line " << token.line << ", position " << token.position << "\n" << token.errorLine; 
 }
 
 std::ostream &Tokenization::operator<<(std::ostream &os, const Token::Type &type)
 {
+    os << '\'';
+
     switch(type)
     {
         case Token::Type::EndOfLine:
-            return os << ';';
+            os << ';';
+            break;
         case Token::Type::Identificator:
-            return os << "Identificator: ";
+            os << "Identificator: ";
+            break;
         case Token::Type::KeywordIf:
-            return os << "if";
+            os << "if";
+            break;
         case Token::Type::KeywordLet:
-            return os << "let";
+            os << "let";
+            break;
         case Token::Type::KeywordWhile:
-            return os << "while";
+            os << "while";
+            break;
         case Token::Type::KeywordDisplay:
-            return os << "display";
+            os << "display";
+            break;
         case Token::Type::Literal:
-            return os << "literal: ";
+            os << "literal: ";
+            break;
         case Token::Type::OperatorAssign:
-            return os << '=';
+            os << '=';
+            break;
         case Token::Type::OperatorMinus:
-            return os << '-';
+            os << '-';
+            break;
         case Token::Type::OperatorPlus:
-            return os << '+';
+            os << '+';
+            break;
         case Token::Type::OperatorSlash:
-            return os << '/';
+            os << '/';
+            break;
         case Token::Type::OperatorStar:
-            return os << '*';
+            os << '*';
+            break;
         case Token::Type::OperatorPercent:
-            return os << "%";
+            os << "%";
+            break;
         case Token::Type::ParenthesisLeft:
-            return os << '(';
+            os << '(';
+            break;
         case Token::Type::ParenthesisRight:
-            return os << ')';
+            os << ')';
+            break;
         case Token::Type::BraceLeft:
-            return os << "{";
+            os << "{";
+            break;
         case Token::Type::BraceRight:
-            return os << "}";
+            os << "}";
+            break;
         case Token::Type::OperatorAND:
-            return os << "and";
+            os << "and";
+            break;
         case Token::Type::OperatorOR:
-            return os << "or";
+            os << "or";
+            break;
         case Token::Type::OperatorNOT:
-            return os << "not";
+            os << "not";
+            break;
         case Token::Type::ComparatorEquals:
-            return os << "==";
+            os << "==";
+            break;
         case Token::Type::ComparatorNotEquals:
-            return os << "!=";
+            os << "!=";
+            break;
         case Token::Type::ComparatorGreaterEqual:
-            return os << ">=";
+            os << ">=";
+            break;
         case Token::Type::ComparatorGreaterThan:
-            return os << ">";
+            os << ">";
+            break;
         case Token::Type::ComparatorLessEqual:
-            return os << "<=";
+            os << "<=";
+            break;
         case Token::Type::ComparatorLessThan:
-            return os << "<";
+            os << "<";
+            break;
         default:
             throw std::runtime_error("Invalid type");
     }
+
+    if(type != Token::Type::Identificator && type != Token::Type::Literal) return os << '\'';
+    return os;
 }
 
-Tokenization::Token::Token(Type type, const std::string &value) : type(type), value(value)
+Tokenization::Token::Token(Type type, unsigned line, unsigned position, std::string errorLine, const std::string &value) 
+    : type(type), value(value), line(line), position(position), errorLine(errorLine)
 {
     if(value.empty() && (type == Token::Type::Identificator || type == Token::Type::Literal))
     {

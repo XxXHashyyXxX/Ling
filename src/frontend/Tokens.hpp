@@ -37,7 +37,11 @@ namespace Tokenization {
 
         std::string value;
 
-        Token(Type type, const std::string& value = "");
+        unsigned line;
+        unsigned position;
+        std::string errorLine;
+
+        Token(Type type, unsigned lineCount, unsigned position, std::string errorLine, const std::string& value = "");
     };
 
     std::vector<Token> tokenize(std::string_view source);

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <optional>
 #include "frontend/Tokens.hpp"
 #include "frontend/Parser.hpp"
 #include "backend/SymbolTable.hpp"
@@ -36,11 +37,42 @@ int main(int argc, char** argv) {
     std::string buffer(size, '\0');
     source.read(buffer.data(), size);
 
-    auto tokens = Tokenization::tokenize(buffer);
-    std::vector<Token>::const_iterator it = tokens.begin();
-    auto result = Parser::parseTokens(tokens, it);
+    std::vector<Tokenization::Token> tokens;
+    try 
+    {
+        tokens = Tokenization::tokenize(buffer);
+    }
+    catch(std::exception& e)
+    {
+        std::cerr << "\n\tCompilation error during tokenization:\n" << e.what() << "\n";
+        return -1;
+    }
 
-    SymbolTable table(result);
+    std::vector<Token>::const_iterator it = tokens.begin();
+    std::vector<std::unique_ptr<AST::Statement>> result;
+    try
+    {
+        result = Parser::parseTokens(tokens, it);
+    }
+    catch(std::exception& e)
+    {
+        std::cerr << "\n\tCompilation error during parsing:\n" << e.what() << "\n";
+        return -1;
+    }
+
+    std::optional<SymbolTable> optionalTable;
+
+    try
+    {
+        optionalTable.emplace(result);
+    }
+    catch(std::exception& e)
+    {
+        std::cerr << "\n\tCompilation error during variable resolution:\n" << e.what() << "\n";
+        return -1;
+    }
+
+    SymbolTable table = *optionalTable;
     BuilderIR ir(result);
 
     CodeGen gen(ir, table);

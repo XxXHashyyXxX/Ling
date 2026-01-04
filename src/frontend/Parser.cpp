@@ -34,9 +34,16 @@
 inline static void checkNextToken(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& it, Token::Type expectedToken)
 {
     auto end = tokens.end();
-    if(it + 1 == end) throw std::runtime_error("Structure not met (end of tokens where token was expected)");
+    std::ostringstream oss;
+    if(it + 1 == end) {
+        oss << "Structure not met (end of tokens where token was expected)\n" << *it;
+        throw std::runtime_error(oss.str());
+    }
     ++it;
-    if(it->type != expectedToken) throw std::runtime_error("Structure not met (token doesn\'t match the expected token)");
+    if(it->type != expectedToken) {
+        oss << "Structure not met (token doesn\'t match the expected token)\n" << *it << "\nExpected: " << expectedToken << "\nGot: " << it->type;
+        throw std::runtime_error(oss.str());
+    }
 }
 
 std::unique_ptr<Statement> parseStatement(const std::vector<Token> &tokens, std::vector<Token>::const_iterator &it)
@@ -48,14 +55,14 @@ std::unique_ptr<Statement> parseStatement(const std::vector<Token> &tokens, std:
     {
         case Token::Type::KeywordLet: {
             checkNext(Token::Type::Identificator);
-            std::string_view identificator = it->value;
+            const auto& identificator = *it;
             checkNext(Token::Type::OperatorAssign);
             ++it;
             auto value = Parser::parseExpression(tokens, it, Token::Type::EndOfLine);
             return std::make_unique<VariableDeclaration>(identificator, std::move(value));
         } break;
         case Token::Type::Identificator: {
-            std::string_view identificator = it->value;
+            const Tokenization::Token& identificator = *it;
             checkNext(Token::Type::OperatorAssign);
             ++it;
             auto value = Parser::parseExpression(tokens, it, Token::Type::EndOfLine);
@@ -85,8 +92,11 @@ std::unique_ptr<Statement> parseStatement(const std::vector<Token> &tokens, std:
             auto body = Parser::parseTokens(tokens, it);
             return std::make_unique<CodeBlock>(std::move(body));
         } break;
-        default:
-            throw std::runtime_error("Invalid statement");
+        default: {
+            std::ostringstream oss;
+            oss << "Invalid statement\n" << *it;
+            throw std::runtime_error(oss.str());
+        }
     }
 }
 
@@ -269,7 +279,7 @@ std::unique_ptr<Expression> Parser::parseExpression(const std::vector<Token> &to
         switch(type)
         {
             case Token::Type::Identificator: {
-                values.push(std::make_unique<VariableValue>(pair.first->value));
+                values.push(std::make_unique<VariableValue>(*pair.first));
             } break;
             case Token::Type::Literal: {
                 values.push(std::make_unique<LiteralValue>(pair.first->value));
