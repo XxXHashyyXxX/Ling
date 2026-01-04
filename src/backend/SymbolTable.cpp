@@ -1,4 +1,5 @@
 #include "SymbolTable.hpp"
+#include <sstream>
 
 SymbolTable::SymbolTable(const std::vector<std::unique_ptr<AST::Statement>> &statements)
 {
@@ -33,12 +34,17 @@ void SymbolTable::declare(AST::VariableData &variable)
 
     auto name = variable.getName();
     auto& top = scopes.back();
-    if(top.symbols.find(name) != top.symbols.end()) throw std::runtime_error("[Symbol table] Trying to double declare a variable");
+    if(top.symbols.find(name) != top.symbols.end()) 
+    {
+        std::ostringstream oss;
+        oss << "Double variable declaration\n" << variable.token << "\nFirst declared\n" << getDeclarationInfo(variable).declarationToken;
+        throw std::runtime_error(oss.str());
+    }
 
     currentOffset += 8;
 
     variable.resolve(currentOffset);
-    top.symbols.emplace(name, currentOffset);
+    top.symbols.emplace(name, Scope::DeclarationInfo(currentOffset, variable.token));
     if(maxOffset < currentOffset) maxOffset = currentOffset;
 }
 
@@ -46,18 +52,8 @@ void SymbolTable::resolve(AST::VariableData &variable)
 {
     if(scopes.empty()) throw std::runtime_error("[Symbol table] Trying to use variable without scope");
 
-    auto name = variable.getName();
-    for(auto it = scopes.rbegin(); it != scopes.rend(); ++it)
-    {
-        auto& symbols = it->symbols;
-        if(symbols.find(name) == symbols.end()) continue;
-
-        auto symbolOffset = symbols.at(name);
-        variable.resolve(symbolOffset);
-        return;
-    }
-
-    throw std::runtime_error("[Symbol table] Trying to use variable without declaration");
+    auto symbolOffset = getDeclarationInfo(variable).offset;
+    variable.resolve(symbolOffset);
 }
 
 bool SymbolTable::validateStatement(const std::unique_ptr<AST::Statement> &statement)
@@ -119,3 +115,23 @@ bool SymbolTable::validateExpression(const std::unique_ptr<AST::Expression> &exp
     
     throw std::invalid_argument("Unrecognized expression");
 }
+
+const SymbolTable::Scope::DeclarationInfo &SymbolTable::getDeclarationInfo(const AST::VariableData &variable)
+{
+    auto name = variable.getName();
+    for(auto it = scopes.rbegin(); it != scopes.rend(); ++it)
+    {
+        auto& symbols = it->symbols;
+        if(symbols.find(name) == symbols.end()) continue;
+
+        auto& declarationInfo = symbols.at(name);
+        return declarationInfo;
+    }
+
+    std::ostringstream oss;
+    oss << "Use of undeclared variable\n" << variable.token;
+    throw std::runtime_error(oss.str());
+}
+
+SymbolTable::Scope::DeclarationInfo::DeclarationInfo(unsigned offset, const Tokenization::Token &declarationToken)
+    : offset(offset), declarationToken(declarationToken) {}

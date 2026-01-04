@@ -6,8 +6,11 @@ AST::Statement::~Statement() = default;
 AST::Expression::~Expression() = default;
 AST::VariableData::~VariableData() = default;
 
-AST::VariableDeclaration::VariableDeclaration(std::string_view identificator, std::unique_ptr<Expression> value)
-    : identificator(identificator), value(std::move(value)) 
+AST::VariableData::VariableData(const Tokenization::Token &token)
+    : token(token) {}
+
+AST::VariableDeclaration::VariableDeclaration(const Tokenization::Token& token, std::unique_ptr<Expression> value)
+    : AST::VariableData(token), identificator(token.value), value(std::move(value))
 {
     if(identificator.empty())
         throw std::invalid_argument("Cannot declare a variable with empty identificator");
@@ -18,8 +21,8 @@ std::string AST::VariableDeclaration::getName() const
     return identificator;
 }
 
-AST::VariableAssignment::VariableAssignment(std::string_view identificator, std::unique_ptr<Expression> value)
-    : identificator(identificator), value(std::move(value))
+AST::VariableAssignment::VariableAssignment(const Tokenization::Token& token, std::unique_ptr<Expression> value)
+    : AST::VariableData(token), identificator(token.value), value(std::move(value))
 {
     if(identificator.empty())
         throw std::invalid_argument("Cannot assign to a variable with empty identificator");
@@ -51,8 +54,8 @@ std::optional<int> AST::LiteralValue::getValue() const
     return value;
 }
 
-AST::VariableValue::VariableValue(std::string_view identificator)
-    : identificator(identificator)
+AST::VariableValue::VariableValue(const Tokenization::Token& token)
+    : AST::VariableData(token), identificator(token.value)
 {}
 
 std::optional<int> AST::VariableValue::getValue() const

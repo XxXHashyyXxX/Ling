@@ -4,6 +4,7 @@
 #include <optional>
 #include <unordered_map>
 #include <functional>
+#include "Tokens.hpp"
 
 namespace AST {
 
@@ -15,17 +16,20 @@ namespace AST {
     };
     struct VariableData {
         virtual ~VariableData() = 0;
+        explicit VariableData(const Tokenization::Token& token); 
 
         unsigned offset = 0;
         bool resolved = false;
         
         virtual std::string getName() const = 0;
         void resolve(unsigned offset);
+    
+        const Tokenization::Token& token;
     };
 
     // ===== Statements =====
     struct VariableDeclaration : public Statement, public VariableData {
-        VariableDeclaration(std::string_view identificator, std::unique_ptr<Expression> value);
+        VariableDeclaration(const Tokenization::Token& identificator, std::unique_ptr<Expression> value);
         ~VariableDeclaration() = default;
 
         std::string identificator;
@@ -34,7 +38,7 @@ namespace AST {
         std::string getName() const override;
     };
     struct VariableAssignment : public Statement, public VariableData {
-        VariableAssignment(std::string_view identificator, std::unique_ptr<Expression> value);
+        VariableAssignment(const Tokenization::Token& identificator, std::unique_ptr<Expression> value);
         ~VariableAssignment() = default;
 
         std::string identificator;
@@ -79,7 +83,7 @@ namespace AST {
         int value;
     };
     struct VariableValue : public Expression, public VariableData {
-        VariableValue(std::string_view identificator);
+        VariableValue(const Tokenization::Token& identificator);
         ~VariableValue() = default;
 
         std::optional<int> getValue() const override;

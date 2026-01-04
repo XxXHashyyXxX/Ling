@@ -360,7 +360,7 @@ BuilderIR::TempVarID BuilderIR::getTempVarsCount() const
 BuilderIR::BuilderIR(const std::vector<std::unique_ptr<AST::Statement>> &program)
 {
     lowerProgram(program);
-    //tryOptimize();
+    tryOptimize();
 }
 
 const std::vector<BuilderIR::Instruction> &BuilderIR::getCode() const

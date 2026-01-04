@@ -16,7 +16,14 @@ public:
 
 private:
     struct Scope {
-        std::unordered_map<std::string, unsigned> symbols;
+        struct DeclarationInfo {
+            DeclarationInfo(unsigned offset, const Tokenization::Token& declarationToken);
+
+            const Tokenization::Token& declarationToken;
+            unsigned offset;
+        };
+
+        std::unordered_map<std::string, DeclarationInfo> symbols;
         unsigned savedOffset = 0;
     };
 
@@ -28,9 +35,10 @@ private:
     void declare(AST::VariableData& variable);
     void resolve(AST::VariableData& variable);
 
-    std::unordered_map<std::string, unsigned> _symbols;
     bool validateStatement(const std::unique_ptr<AST::Statement>& statement);
     bool validateExpression(const std::unique_ptr<AST::Expression>& expression);
+
+    const Scope::DeclarationInfo& getDeclarationInfo(const AST::VariableData& variable);
     
     unsigned currentOffset = 0;
     unsigned maxOffset = 0;
