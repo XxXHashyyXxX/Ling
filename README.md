@@ -95,7 +95,7 @@ Note that the program meant to be compiled is given without the `.ling` extensio
 
 If, for any reason, it is prefered to compile to assembly instead of the ELF64 executable, the `-s` flag can be used. For instance, to compile `test.ling` into an assembly code, one can use
 ```
-./ling test.ling -s
+./ling test -s
 ```
 
 ## Example programs
