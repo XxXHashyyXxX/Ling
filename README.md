@@ -4,7 +4,7 @@ Ling, in its current state, is a really simple and limited language. It is only 
 
 ## Syntax
 
-Ling treats programs as an array of statements, meaning there is no `main` function. In fact, in its current state, Ling does not implement functions yet. This is going to change in future versions of the language.
+Ling treats programs as a list of statements, meaning there is no `main` function. In fact, in its current state, Ling does not implement functions yet. This is going to change in future versions of the language.
 
 ### Statements
 
