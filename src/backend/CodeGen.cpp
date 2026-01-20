@@ -64,7 +64,7 @@ __display__function__:
 
 struct InstructionGenerator {
     InstructionGenerator(std::ostream& os, const BuilderIR& builderIR, const SymbolTable& symbolTable) 
-        : os(os), builderIR(builderIR), symbolTable(symbolTable), localVariablesOffset(symbolTable.getOffset()) {}
+        : os(os), builderIR(builderIR), symbolTable(symbolTable), localVariablesOffset(symbolTable.getOffset() + 8) {}
 
     void operator()(BuilderIR::InstructionLoad load) const;
     void operator()(BuilderIR::InstructionStore store) const;

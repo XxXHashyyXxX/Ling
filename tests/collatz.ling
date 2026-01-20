@@ -1,20 +1,11 @@
-let n = 27;
-let steps = 40;
+let n = 7;
 
-let p = 0;
-let i = 0;
-
-while(steps)
-{
-    steps = steps - 1;
-    p = 0;
-    i = n;
-    while(i) { i = i - 1; p = 1 - p; }
-
-    if(p)
-        n = 3 * n + 1;
-    if(1-p)
-        n = n / 2;
-    
+while(n != 1) {
+    let reminder = n % 2;
     display n;
+
+    if(reminder == 0) n = n / 2;
+    if(reminder == 1) n = 3 * n + 1; 
 }
+
+display n;
